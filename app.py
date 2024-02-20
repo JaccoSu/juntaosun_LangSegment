@@ -103,16 +103,22 @@ def parse_language(input_text):
 
 # 过滤：
 def lang_selected(option:str):
-    filterValues = option
     # 列表中文映射
+    filterValues = option
     for key in dict_language:
         filterValues = filterValues.replace(key,dict_language[key])
     # 设置过滤器值
-    print(f"你选择了语言过滤器：{option} ==> {filterValues} ")
+    print(f"你选择了语言过滤器： {option} ==> {filterValues} ")
     # all = 代表保留所有语言，这里限定：中英日韩
     filterValues = ["zh", "en", "ja", "ko"] if filterValues == "all" else [filterValues]
     LangSegment.setfilters(filterValues)
     pass
+
+
+def onPageInit():
+    lang_filters_value = gr.Dropdown(value=filter_list[0])
+    return lang_filters_value
+
 
 # Translated from Google：
 #LangSegment Text-to-Speech TTS Multilingual Word Segmentation\ n\
@@ -151,6 +157,8 @@ gr_css = """
 }
 """
 
+
+
 with gr.Blocks(title="LangSegment WebUI" , css=gr_css) as app:
     gr.Markdown(
         value=f"# LangSegment 文本转语音专用，TTS混合语种分词 [v{LangSegment.__version__}]\n \
@@ -160,15 +168,15 @@ with gr.Blocks(title="LangSegment WebUI" , css=gr_css) as app:
         若遇到问题，欢迎前往github提供反馈，一起让它变得更易用： https://github.com/juntaosun/LangSegment <br> \
         "
     )
-    with gr.Group():
+    with gr.Group(): # gr.Dropdown.update(choices=filter_list)["choices"]
         with gr.Row():
             with gr.Column():
                 input_text  = gr.TextArea(label=f"【分词输入】：多语种混合文本内容。目前仅专注（中文Chinese、日文Japanese、英文English、韩文Korean）", value=f"{example_text}",lines=12)
                 # [Word input]: Multilingual mixed text content. Currently specially supported (Chinese, Japanese, English, Korean)
                 gr.Markdown(value=f"{lang_desc}")
-                lang_filters = gr.Dropdown(choices=filter_list, value=filter_list[0], label='【语言过滤】：设置需要保留的语言，过滤其它语言。(API：LangSegment.setfilters)')
+                lang_filters = gr.Dropdown(choices=filter_list, label='【语言过滤】：设置需要保留的语言，过滤其它语言。(API：LangSegment.setfilters)')
                 # TTS multilingual mixed text, click for word segmentation
-                lang_button = gr.Button("TTS多语言混合文本 , 点击进行分词处理", variant="primary",elem_classes=["lang_button"])
+                lang_button = gr.Button("✨TTS多语言混合文本 , 点击进行分词处理", variant="primary",elem_classes=["lang_button"])
             with gr.Column():
                 with gr.Tabs():
                     # A: Toggle the result to highlight
@@ -203,6 +211,12 @@ with gr.Blocks(title="LangSegment WebUI" , css=gr_css) as app:
             lang_selected,
             [lang_filters]
         )
+        
+        app.load(
+            onPageInit,
+            [],
+            [lang_filters],
+            )
         
 app.queue(concurrency_count=511, max_size=1022).launch(
     server_name="0.0.0.0",
