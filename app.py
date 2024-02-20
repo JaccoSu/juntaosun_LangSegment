@@ -11,6 +11,8 @@ import LangSegment
 # This is the webui of this project. After running the script, it will open the browser web page and you can experience it.
 # =================================================================
 
+# gradio
+print("gradio:", gr.__version__)
 
 # 显示版本，display version
 version = LangSegment.__version__
@@ -115,9 +117,19 @@ def lang_selected(option:str):
     pass
 
 
+# 推荐使用 gradio==3.50.2
 def onPageInit():
-    lang_filters_value = gr.Dropdown(value=filter_list[0])
-    return lang_filters_value
+    filters_value = filter_list[0]
+    print(f"默认过滤保留语言：{filters_value}")
+    # 兼容 gradio 的版本
+    if hasattr(gr.Dropdown, 'update'):
+        # gradio 3.x , 3.50.2
+        print("loaded gradio 3.x")
+        return gr.Dropdown.update(value=filters_value)
+    else:
+        # gradio 4.x
+        print("loaded gradio 4.x")
+        return gr.Dropdown(value=filters_value, interactive=True)
 
 
 # Translated from Google：
@@ -217,11 +229,20 @@ with gr.Blocks(title="LangSegment WebUI" , css=gr_css) as app:
             [],
             [lang_filters],
             )
-        
-app.queue(concurrency_count=511, max_size=1022).launch(
-    server_name="0.0.0.0",
-    inbrowser=True,
-    share=False,
-    server_port=6066,
-    quiet=True,
-)
+
+
+# 注意 gradio 3.x 和 gradio 4.x 启动参数有差异。
+if int(gr.__version__.split(".")[0]) >= 4:
+    app = app.queue() # gradio 4.x
+else:
+    app = app.queue(concurrency_count=511, max_size=1022) # gradio 3.x / 3.50.2
+  
+    
+# 推荐使用 gradio==3.50.2
+app.launch(
+        server_name="0.0.0.0",
+        inbrowser=True,
+        share=False,
+        server_port=6066,
+        quiet=True,
+    )

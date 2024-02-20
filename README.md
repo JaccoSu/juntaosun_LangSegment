@@ -29,7 +29,7 @@ https://github.com/adbar/py3langid
 
 ```python
 # Gradio demo：To use our gradio demo locally:
-# 运行脚本，打开浏览器 gradio webui 界面，开始快速体验。
+# 运行脚本，打开浏览器 gradio webui 界面，开始快速体验。(gradio==3.50.2)
 python app.py  
 ```
 
