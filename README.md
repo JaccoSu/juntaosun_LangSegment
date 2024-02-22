@@ -187,12 +187,12 @@ print(LangSegment.getTexts("번호：123456789"))  # 提供上下文，识别输
 ```python
 # 在中日混合下，默认情况为中文优先。
 LangSegment.setfilters(["zh","ja","en","ko"])
+# 默认处理：
 print(LangSegment.getTexts("番号: 123456789"))  
 # [{'lang': 'zh', 'text': '番号: 123456789 ', 'score': 0.87188566}]
 # 默认识别：中文=zh ，识别的参考置信度是：0.87
 ``` 
 * 而此时，在中日混合模式下，我们希望它识别成：日语=ja。 
-* 同时，优先级受评分置信度（score）影响：范围为（0~1）值越高可信度越高。但也会遇到难以区分的情况     
 ```python
 # 只需按如下调整过滤器的语言优先级。让 ja 优先于 zh 之前。
 LangSegment.setfilters(["ja","zh","en","ko"])
