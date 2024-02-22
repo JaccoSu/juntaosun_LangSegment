@@ -16,9 +16,9 @@ https://github.com/adbar/py3langid
 本代码专为各种 TTS 项目的前端文本多语种混合标注区分，多语言混合训练和推理而编写。
 
 ## 最近更新：News   
-* 版本：v0.2.0     
- fix: LangSegment.setfilters
-* 优化字符处理。    
+* 版本：v0.2.1     
+* 新功能：语言优先级，置信度评分和阀值（更新帮助见下文）。
+* 优化字符处理。fix: LangSegment.setfilters    
 * 更细致的处理，中日英韩，分词更精准！  
 * 多语言过滤组功能（默认关闭）！帮您自动清理不需要的语言内容。   
 * 添加 WebUI 可视化界面，运行 app.py 即可快捷体验（如图所示）。  
@@ -127,7 +127,8 @@ pip3 install LangSegment -i  https://pypi.org/simple --upgrade
 ```  
 
 ## 语言过滤：支持
->语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。  
+> 版本支持：>=0.2.0   
+语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。  
 ```python
 # Set language filters
 # 设置语言过滤功能，未指定的语言将被清除，使它完全适配您的TTS项目。
@@ -150,6 +151,60 @@ LangSegment.setfilters(["zh", "en", "ja", "ko"]) # 标准写法
 # ["zh_ko_en"]  # 中韩英混合识别
 # 以上是示例，您可根据自己的TTS项目进行自由组合。
 ```  
+## 语言优先级：支持
+> 版本支持：>=0.2.1   
+当我们在鉴别纯数字时，比如“123456”，全球语言通用。如果没有提供上下文，将无法区分语言归属（默认en）。  
+这时候，您只需调整语言优先级。就能准确识别。相关示例如下：
+
+```python
+# 仅输入独立纯数字：所有国家通用，因为没有提供上下文，所以无法区分语言归属
+print(LangSegment.getTexts("123456789")) # 国际纯数字，默认输出：英文=en
+
+# 调整过滤语言优先级，中文优先，数字按中文优先识别
+LangSegment.setfilters(["zh","ja"])
+print(LangSegment.getTexts("123456789")) # 识别输出：中文=zh
+
+# 调整过滤语言优先级，日语优先，数字按中文优先识别
+LangSegment.setfilters(["ja","zh"])
+print(LangSegment.getTexts("123456789")) # 识别输出：日文=ja
+
+# 调整过滤语言优先级，韩语优先，数字按韩语优先识别
+LangSegment.setfilters(["ko","zh"])
+print(LangSegment.getTexts("123456789")) # 识别输出：韩文=ko  
+
+# 识别输出：中文，（因为提供了上下文，汉字“编号：”）
+LangSegment.setfilters(["ko","zh","en","ja"])
+print(LangSegment.getTexts("编号：123456789"))  # 有上下文，识别输出：中文=zh  
+print(LangSegment.getTexts("Number：123456789"))  # 有上下文，识别输出：英文=en  
+print(LangSegment.getTexts("번호：123456789"))  # 有上下文，识别输出：韩文=ko  
+```   
+## 优先级与置信度：特殊示例
+> 版本支持：>=0.2.1   
+语言优先级除了对输入的纯数字外，它对中文与日文也特别有用，以下是使用示例：   
+
+* 示例汉字词：“番号”，由于在中文和日语，两者使用几乎完全一样，在中日混合模式下。   
+```python
+# 在中日混合下，默认情况为中文优先。
+LangSegment.setfilters(["zh","ja","en","ko"])
+print(LangSegment.getTexts("番号: 123456789"))  
+# [{'lang': 'zh', 'text': '番号: 123456789 ', 'score': 0.87188566}]
+# 默认识别：中文=zh ，识别的参考置信度是：0.87
+``` 
+* 而此时，在中日混合模式下，我们希望它识别成：日语=ja。 
+* 同时，优先级受评分置信度（score）影响：范围为（0~1）值越高可信度越高。但也会遇到难以区分的情况     
+```python
+# 只需按如下调整过滤器的语言优先级。让 ja 优先于 zh 之前。
+LangSegment.setfilters(["ja","zh","en","ko"])
+# 再次处理：
+print(LangSegment.getTexts("番号: 123456789"))  
+# [{'lang': 'ja', 'text': '番号: 123456789 ', 'score': 0.87188566}]
+# 阀值的精准控制下，它被优先识别为我们希望的结果：日文=ja  
+
+# 您还可以添加语言标签：精准控制
+print(LangSegment.getTexts("<ja>番号: 123456789</ja>")) 
+# 添加语言标签，正确输出：日文=ja
+```   
+
 
 ## 总结说明：  
 它经过了高达 97 种语言的预训练，相信它绝对能满足您的 TTS 语音合成项目所需。    

@@ -17,13 +17,21 @@ import re
 from collections import defaultdict
 
 # import langid
-import py3langid as langid
+# import py3langid as langid
 # pip install py3langid==0.2.2
+
+# 启用语言预测概率归一化，概率预测的分数。因此，实现重新规范化 产生 0-1 范围内的输出。
+# langid disables probability normalization by default. For command-line usages of , it can be enabled by passing the flag. 
+# For probability normalization in library use, the user must instantiate their own . An example of such usage is as follows:
+from py3langid.langid import LanguageIdentifier, MODEL_FILE
+langid = LanguageIdentifier.from_pickled_model(MODEL_FILE, norm_probs=True)
 
 
 # -----------------------------------
 # 更新日志：新版本分词更加精准。
 # Changelog: The new version of the word segmentation is more accurate.
+# チェンジログ:新しいバージョンの単語セグメンテーションはより正確です。
+# Changelog: 분할이라는 단어의 새로운 버전이 더 정확합니다.
 # -----------------------------------
 
 
@@ -33,6 +41,23 @@ import py3langid as langid
 # This code is designed for front-end text multi-lingual mixed annotation distinction, multi-language mixed training and inference of various TTS projects.
 # This processing result is mainly for (Chinese = zh, Japanese = ja, English = en, Korean = ko), and can actually support up to 97 different language mixing processing.
 
+#===========================================================================================================
+#分かち書き機能:文章や文章の中の例えば（中国語/英語/日本語/韓国語）を、異なる言語で自動的に認識して分割し、TTS処理により適したものにします。
+#このコードは、さまざまなTTSプロジェクトのフロントエンドテキストの多言語混合注釈区別、多言語混合トレーニング、および推論のために特別に作成されています。
+#===========================================================================================================
+#(1)自動分詞:「韓国語では何を読むのですかあなたの体育の先生は誰ですか?今回の発表会では、iPhone 15シリーズの4機種が登場しました」
+#（2）手动分词:“あなたの名前は<ja>佐々木ですか?<ja>ですか?”
+#この処理結果は主に（中国語=ja、日本語=ja、英語=en、韓国語=ko）を対象としており、実際には最大97の異なる言語の混合処理をサポートできます。
+#===========================================================================================================
+
+#===========================================================================================================
+# 단어 분할 기능: 기사 또는 문장에서 단어(중국어/영어/일본어/한국어)를 다른 언어에 따라 자동으로 식별하고 분할하여 TTS 처리에 더 적합합니다.
+# 이 코드는 프런트 엔드 텍스트 다국어 혼합 주석 분화, 다국어 혼합 교육 및 다양한 TTS 프로젝트의 추론을 위해 설계되었습니다.
+#===========================================================================================================
+# (1) 자동 단어 분할: "한국어로 무엇을 읽습니까? 스포츠 씨? 이 컨퍼런스는 4개의 iPhone 15 시리즈 모델을 제공합니다."
+# (2) 수동 참여: "이름이 <ja>Saki입니까? <ja>?"
+# 이 처리 결과는 주로 (중국어 = zh, 일본어 = ja, 영어 = en, 한국어 = ko)를 위한 것이며 실제로 혼합 처리를 위해 최대 97개의 언어를 지원합니다.
+#===========================================================================================================
 
 # ===========================================================================================================
 # 分词功能：将文章或句子里的例如（中/英/日/韩），按不同语言自动识别并拆分，让它更适合TTS处理。
@@ -45,7 +70,9 @@ import py3langid as langid
 
 
 # 手动分词标签规范：<语言标签>文本内容</语言标签>
+# 수동 단어 분할 태그 사양: <언어 태그> 텍스트 내용</언어 태그>
 # Manual word segmentation tag specification: <language tags> text content </language tags>
+# 手動分詞タグ仕様:<言語タグ>テキスト内容</言語タグ>
 # ===========================================================================================================
 # For manual word segmentation, labels need to appear in pairs, such as:
 # 如需手动分词，标签需要成对出现，例如：“<ja>佐々木<ja>”  或者  “<ja>佐々木</ja>”
@@ -61,19 +88,29 @@ class LangSegment():
     _lang_count = None
     _lang_eos =   None
     
-    # 可自定义语言匹配标签：
-    # Customizable language matching tags: These are supported
+    # 可自定义语言匹配标签：カスタマイズ可能な言語対応タグ:사용자 지정 가능한 언어 일치 태그:
+    # Customizable language matching tags: These are supported，이 표현들은 모두 지지합니다
     # <zh>你好<zh> , <ja>佐々木</ja> , <en>OK<en> , <ko>오빠</ko> 这些写法均支持
     SYMBOLS_PATTERN = r'(<([a-zA-Z|-]*)>(.*?)<\/*[a-zA-Z|-]*>)'
     
     # 语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。
+    # 언어 필터 그룹 기능을 사용하면 예약된 언어를 지정할 수 있습니다. 필터 그룹에 없는 언어는 지워집니다. TTS 텍스트에서 지원하는 언어를 원하는 대로 일치시킬 수 있습니다.
+    # 言語フィルターグループ機能では、予約言語を指定できます。フィルターグループに含まれていない言語はクリアされます。TTS音声合成がサポートする言語を自由に組み合わせることができます。
     # The language filter group function allows you to specify reserved languages. 
     # Languages not in the filter group will be cleared. You can match the languages supported by TTS Text To Speech as you like.
+    # 排名越前，优先级越高，The higher the ranking, the higher the priority，ランキングが上位になるほど、優先度が高くなります。
     Langfilters = ["zh", "en", "ja", "ko"]
     # 除此以外，它支持简写过滤器，只需按不同语种任意组合即可。
     # In addition to that, it supports abbreviation filters, allowing for any combination of different languages.
     # 示例：您可以任意指定多种组合，进行过滤
     # Example: You can specify any combination to filter
+    
+    # 中/日语言优先级阀值（评分范围为 0 ~ 1）:评分低于设定阀值 <0.89 时，启用 filters 中的优先级。\n
+    # 중/일본어 우선 순위 임계값(점수 범위 0-1): 점수가 설정된 임계값 <0.89보다 낮을 때 필터에서 우선 순위를 활성화합니다.
+    # 中国語/日本語の優先度しきい値（スコア範囲0〜1）:スコアが設定されたしきい値<0.89未満の場合、フィルターの優先度が有効になります。\n
+    # Chinese and Japanese language priority threshold (score range is 0 ~ 1): The default threshold is 0.89.  \n
+    # Only the common characters between Chinese and Japanese are processed with confidence and priority. \n
+    LangPriorityThreshold = 0.89
     
     # Langfilters = ["zh"]              # 按中文识别
     # Langfilters = ["en"]              # 按英文识别
@@ -89,6 +126,7 @@ class LangSegment():
     # Langfilters = ["zh_ja_en_ko"]     # 中日英韩混合识别
     
     # 更多过滤组合，请您随意。。。For more filter combinations, please feel free to......
+    # より多くのフィルターの組み合わせ、お気軽に。。。더 많은 필터 조합을 원하시면 자유롭게 해주세요. .....
     
     
     # DEFINITION
@@ -128,19 +166,29 @@ class LangSegment():
         return modified_text + " "
     
     @staticmethod
-    def _saveData(words,language:str,text:str):
+    def _saveData(words,language:str,text:str,score:float):
         # Language word statistics
         lang_count = LangSegment._lang_count
         if lang_count is None:lang_count = defaultdict(int)
         if not "|" in language:lang_count[language] += int(len(text)//2) if language == "en" else len(text)
         LangSegment._lang_count = lang_count
+        # Pre-detection
+        clear_pattern = re.compile(r'([^\w\s]+)')
+        clear_text = re.sub(clear_pattern,'',re.sub(r'\n+','',text)).strip()
+        is_number = len(re.sub(re.compile(r'(\d+)'),'',clear_text)) == 0
         # Merge the same language and save the results
         preData = words[-1] if len(words) > 0 else None
-        if preData and  (preData["lang"] == language):
-            text = preData["text"] + text
-            preData["text"] = text
-            return preData
-        data = {"lang":language,"text": text}
+        if preData is not None:
+            if len(clear_text) == 0:language = preData["lang"]
+            elif is_number == True:language = preData["lang"]
+            if (preData["lang"] == language):
+                text = preData["text"] + text
+                preData["text"] = text
+                return preData
+        elif is_number == True: 
+            priority_language = LangSegment._get_filters_string()[:2]
+            if priority_language in "ja-zh-en-ko":language = priority_language
+        data = {"lang":language,"text": text,"score":score}
         filters = LangSegment.Langfilters
         if filters is None or len(filters) == 0 or "?" in language or   \
             language in filters or language in filters[0] or \
@@ -149,7 +197,7 @@ class LangSegment():
         return data
 
     @staticmethod
-    def _addwords(words,language,text):
+    def _addwords(words,language,text,score):
         if text is None or len(text.strip()) == 0:return True
         if language is None:language = ""
         language = language.lower()
@@ -163,12 +211,11 @@ class LangSegment():
             pre_lang = preResult["lang"]
             if language in pre_lang:preResult["lang"] = language = language.split("|")[0]
             else:preResult["lang"]=pre_lang.split("|")[0]
-            if ispre_waits:preResult = LangSegment._saveData(words,preResult["lang"],preResult["text"])
+            if ispre_waits:preResult = LangSegment._saveData(words,preResult["lang"],preResult["text"],preResult["score"])
         pre_lang = preResult["lang"] if preResult else None
         if ("|" in language) and (pre_lang and not pre_lang in language and not "…" in language):language = language.split("|")[0]
-        filters = LangSegment.Langfilters
-        if "|" in language:LangSegment._text_waits.append({"lang":language,"text": text})
-        else:LangSegment._saveData(words,language,text)
+        if "|" in language:LangSegment._text_waits.append({"lang":language,"text": text,"score":score})
+        else:LangSegment._saveData(words,language,text,score)
         return False
     
     @staticmethod
@@ -192,8 +239,13 @@ class LangSegment():
     
     @staticmethod
     def _lang_classify(cleans_text):
-        language, *_ = langid.classify(cleans_text)
-        return language
+        language, score = langid.classify(cleans_text)
+        return language, score
+    
+    @staticmethod
+    def _get_filters_string():
+        filters = LangSegment.Langfilters
+        return "-".join(filters).lower().strip() if filters is not None else ""
     
     @staticmethod
     def _parse_language(words , segment):
@@ -217,19 +269,24 @@ class LangSegment():
             number_tags = re.compile(r'(⑥\d{6,}⑥)')
             cleans_text = re.sub(number_tags, '' ,text)
             cleans_text = LangSegment._cleans_text(cleans_text)
-            language = LangSegment._lang_classify(cleans_text)
+            language,score = LangSegment._lang_classify(cleans_text)
             prev_language , prev_text = LangSegment._get_prev_data(words)
-            if len(cleans_text) <= 3 and LangSegment._is_chinese(cleans_text):
-                if EOS and LANG_EOS: language = LANG_ZH if len(cleans_text) <= 1 else language
-                elif LangSegment._is_japanese_kana(cleans_text):language = LANG_JA
+            if len(cleans_text) <= 5 and LangSegment._is_chinese(cleans_text):
+                filters_string = LangSegment._get_filters_string()
+                if score < LangSegment.LangPriorityThreshold and len(filters_string) > 0:
+                    index_ja , index_zh = filters_string.find(LANG_JA) , filters_string.find(LANG_ZH)
+                    if index_ja != -1 and index_ja < index_zh:language = LANG_JA
+                    elif index_zh != -1 and index_zh < index_ja:language = LANG_ZH
+                if LangSegment._is_japanese_kana(cleans_text):language = LANG_JA
+                elif EOS and LANG_EOS:language = LANG_ZH if len(cleans_text) <= 1 else language
                 else:
-                    LANG_UNKNOWN = f'{LANG_ZH}|{LANG_JA}'
+                    LANG_UNKNOWN = f'{LANG_ZH}|{LANG_JA}' if language == LANG_ZH else f'{LANG_JA}|{LANG_ZH}'
                     match_end,match_char = LangSegment._match_ending(text, -1)
                     referen = prev_language in LANG_UNKNOWN or LANG_UNKNOWN in prev_language if prev_language else False
                     if match_char in "。.": language = prev_language if referen and len(words) > 0 else language
                     else:language = f"{LANG_UNKNOWN}|…"
             text,*_ = re.subn(number_tags , LangSegment._restore_number , text )
-            LangSegment._addwords(words,language,text)
+            LangSegment._addwords(words,language,text,score)
             pass
         pass
     
@@ -261,7 +318,8 @@ class LangSegment():
         tag , match = data
         language = match[1]
         text = match[2]
-        LangSegment._addwords(words,language,text)
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -269,7 +327,8 @@ class LangSegment():
         tag , match = data
         text = match[0]
         language = "en"
-        LangSegment._addwords(words,language,text)
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -277,7 +336,8 @@ class LangSegment():
         tag , match = data
         text = match[0]
         language = "ko"
-        LangSegment._addwords(words,language,text)
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -289,11 +349,11 @@ class LangSegment():
             LangSegment._process_tags(words , text , False)
         else:
             cleans_text = LangSegment._cleans_text(match[1])
-            if len(cleans_text) <= 3:
+            if len(cleans_text) <= 5:
                 LangSegment._parse_language(words,text)
             else:
-                language = LangSegment._lang_classify(cleans_text)
-                LangSegment._addwords(words,language,text)
+                language,score = LangSegment._lang_classify(cleans_text)
+                LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -306,7 +366,8 @@ class LangSegment():
         tag , match = data
         language = words[0]["lang"] if len(words) > 0 else "zh"
         text = match
-        LangSegment._addwords(words,language,text)
+        score = 0.0
+        LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -351,6 +412,8 @@ class LangSegment():
     @staticmethod
     def setfilters(filters):
         # 当过滤器更改时，清除缓存
+        # 필터가 변경되면 캐시를 지웁니다.
+        # フィルタが変更されると、キャッシュがクリアされます
         # When the filter changes, clear the cache
         if LangSegment.Langfilters != filters:
             LangSegment._clears()
@@ -360,7 +423,15 @@ class LangSegment():
     @staticmethod     
     def getfilters():
         return LangSegment.Langfilters
-            
+    
+    @staticmethod 
+    def setPriorityThreshold(threshold:float):
+        LangSegment.LangPriorityThreshold = threshold
+        pass
+    
+    @staticmethod 
+    def getPriorityThreshold():
+        return LangSegment.LangPriorityThreshold
     
     @staticmethod
     def getCounts():
@@ -398,10 +469,12 @@ class LangSegment():
 def setfilters(filters):
     """
     功能：语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。
+    기능: 언어 필터 그룹 기능, 예약된 언어를 지정할 수 있습니다. 필터 그룹에 없는 언어는 지워집니다. TTS 텍스트에서 지원하는 언어를 원하는 대로 일치시킬 수 있습니다.
+    機能:言語フィルターグループ機能で、予約言語を指定できます。フィルターグループに含まれていない言語はクリアされます。TTS音声合成がサポートする言語を自由に組み合わせることができます。
     Function: Language filter group function, you can specify reserved languages. \n
     Languages not in the filter group will be cleared. You can match the languages supported by TTS Text To Speech as you like.\n
     Args:
-        filters (list): ["zh", "en", "ja", "ko"]
+        filters (list): ["zh", "en", "ja", "ko"] 排名越前，优先级越高
     """
     LangSegment.setfilters(filters)
     pass
@@ -409,10 +482,12 @@ def setfilters(filters):
 def getfilters():
     """
     功能：语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。
+    기능: 언어 필터 그룹 기능, 예약된 언어를 지정할 수 있습니다. 필터 그룹에 없는 언어는 지워집니다. TTS 텍스트에서 지원하는 언어를 원하는 대로 일치시킬 수 있습니다.
+    機能:言語フィルターグループ機能で、予約言語を指定できます。フィルターグループに含まれていない言語はクリアされます。TTS音声合成がサポートする言語を自由に組み合わせることができます。
     Function: Language filter group function, you can specify reserved languages. \n
     Languages not in the filter group will be cleared. You can match the languages supported by TTS Text To Speech as you like.\n
     Args:
-        filters (list): ["zh", "en", "ja", "ko"]
+        filters (list): ["zh", "en", "ja", "ko"] 排名越前，优先级越高
     """
     return LangSegment.getfilters()
 
@@ -428,10 +503,38 @@ def getLangfilters():
     >0.1.9废除：使用更简短的getfilters
     """
     return getfilters()
+
+
+def setPriorityThreshold(threshold:float):
+    """
+    中/日语言优先级阀值（评分范围为 0 ~ 1）:评分低于设定阀值 <0.89 时，启用 filters 中的优先级。\n
+    中国語/日本語の優先度しきい値（スコア範囲0〜1）:スコアが設定されたしきい値<0.89未満の場合、フィルターの優先度が有効になります。\n
+    중/일본어 우선 순위 임계값(점수 범위 0-1): 점수가 설정된 임계값 <0.89보다 낮을 때 필터에서 우선 순위를 활성화합니다.
+    Chinese and Japanese language priority threshold (score range is 0 ~ 1): The default threshold is 0.89.  \n
+    Only the common characters between Chinese and Japanese are processed with confidence and priority. \n
+    Args:
+        threshold:float (score range is 0 ~ 1)
+    """
+    LangSegment.setPriorityThreshold(threshold)
+    pass
+
+def getPriorityThreshold():
+    """
+    中/日语言优先级阀值（评分范围为 0 ~ 1）:评分低于设定阀值 <0.89 时，启用 filters 中的优先级。\n
+    中国語/日本語の優先度しきい値（スコア範囲0〜1）:スコアが設定されたしきい値<0.89未満の場合、フィルターの優先度が有効になります。\n
+    중/일본어 우선 순위 임계값(점수 범위 0-1): 점수가 설정된 임계값 <0.89보다 낮을 때 필터에서 우선 순위를 활성화합니다.
+    Chinese and Japanese language priority threshold (score range is 0 ~ 1): The default threshold is 0.89.  \n
+    Only the common characters between Chinese and Japanese are processed with confidence and priority. \n
+    Args:
+        threshold:float (score range is 0 ~ 1)
+    """
+    return LangSegment.getPriorityThreshold()
     
 def getTexts(text:str):
     """
     功能：对输入的文本进行多语种分词\n 
+    기능: 입력 텍스트의 다국어 분할 \n
+    機能:入力されたテキストの多言語セグメンテーション\n
     Feature: Tokenizing multilingual text input.\n 
     参数-Args:
         text (str): Text content,文本内容\n
@@ -444,6 +547,8 @@ def getTexts(text:str):
 def getCounts():
     """
     功能：分词结果统计，按语种字数降序，用于确定其主要语言\n 
+    기능: 주요 언어를 결정하는 데 사용되는 언어별 단어 수 내림차순으로 단어 분할 결과의 통계 \n
+    機能:主な言語を決定するために使用される、言語の単語数の降順による単語分割結果の統計\n
     Function: Tokenizing multilingual text input.\n 
     返回-Returns:
         list: 示例结果：[('zh', 5), ('ja', 2), ('en', 1)] = [(语种,字数含标点)]\n
@@ -460,6 +565,8 @@ def classify(text:str):
 def printList(langlist):
     """
     功能：打印数组结果
+    기능: 어레이 결과 인쇄
+    機能:配列結果を印刷
     Function: Print array results
     """
     print("\n\n===================【打印结果】===================")
@@ -477,38 +584,44 @@ if __name__ == "__main__":
     # -----------------------------------
     # 更新日志：新版本分词更加精准。
     # Changelog: The new version of the word segmentation is more accurate.
+    # チェンジログ:新しいバージョンの単語セグメンテーションはより正確です。
+    # Changelog: 분할이라는 단어의 새로운 버전이 더 정확합니다.
     # -----------------------------------
     
-    # 输入示例1：（包含日文，中文）
+    # 输入示例1：（包含日文，中文）Input Example 1: (including Japanese, Chinese)
     # text = "“昨日は雨が降った，音楽、映画。。。”你今天学习日语了吗？春は桜の季節です。语种分词是语音合成必不可少的环节。言語分詞は音声合成に欠かせない環節である！"
     
-    # 输入示例2：（包含日文，中文）
+    # 输入示例2：（包含日文，中文）Input Example 1: (including Japanese, Chinese)
     # text = "欢迎来玩。東京，は日本の首都です。欢迎来玩.  太好了!"
     
-    # 输入示例3：（包含日文，中文）
+    # 输入示例3：（包含日文，中文）Input Example 1: (including Japanese, Chinese)
     # text = "明日、私たちは海辺にバカンスに行きます。你会说日语吗：“中国語、話せますか” 你的日语真好啊！"
     
-    # 输入示例4：（包含日文，中文，韩语，英文）
+    
+    # 输入示例4：（包含日文，中文，韩语，英文）Input Example 4: (including Japanese, Chinese, Korean, English)
     text = "你的名字叫<ja>佐々木？<ja>吗？韩语中的안녕 오빠读什么呢？あなたの体育の先生は誰ですか? 此次发布会带来了四款iPhone 15系列机型和三款Apple Watch等一系列新品，这次的iPad Air采用了LCD屏幕" 
     
-    # 进行分词：（接入TTS项目仅需一行代码调用）
+    
+    # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)
     langlist = LangSegment.getTexts(text)
     printList(langlist)
     
     
-    # 语种统计:
+    # 语种统计:Language statistics:
     print("\n===================【语种统计】===================")
     # 获取所有语种数组结果，根据内容字数降序排列
+    # Get the array results in all languages, sorted in descending order according to the number of content words
     langCounts = LangSegment.getCounts()
     print(langCounts , "\n")
     
     # 根据结果获取内容的主要语种 (语言，字数含标点)
+    # Get the main language of content based on the results (language, word count including punctuation)
     lang , count = langCounts[0] 
     print(f"输入内容的主要语言为 = {lang} ，字数 = {count}")
     print("==================================================\n")
     
     
-    # 分词输出：lang=语言，text=内容
+    # 分词输出：lang=语言，text=内容。Word output: lang = language, text = content
     # ===================【打印结果】===================
     # {'lang': 'zh', 'text': '你的名字叫'}
     # {'lang': 'ja', 'text': '佐々木？'}
@@ -532,6 +645,7 @@ if __name__ == "__main__":
 
     # 输入内容的主要语言为 = zh ，字数 = 51
     # ==================================================
+    # The main language of the input content is = zh, word count = 51
     
     
 

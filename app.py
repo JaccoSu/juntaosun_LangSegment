@@ -41,7 +41,7 @@ langdic["no"][0] = "其它"
 # Set language filters
 LangSegment.setfilters(["zh", "en", "ja", "ko"])
 
-# 自定义过滤器，方便在Dropdown使用中文展示
+# 自定义过滤器，方便在Dropdown使用中文展示，过滤器自带优先级功能。比如 ja-zh 其中 ja 日文优先。
 filter_list = [
     "全部：中日英韩", # all
     "中文",
@@ -50,7 +50,8 @@ filter_list = [
     "韩文",
     "中文-英文",
     "中文-日文",
-    "英文-日文",
+    "日文-中文",
+    "日文-英文",
     "中文-英文-日文",
 ]
 
