@@ -99,7 +99,20 @@ class LangSegment():
     # The language filter group function allows you to specify reserved languages. 
     # Languages not in the filter group will be cleared. You can match the languages supported by TTS Text To Speech as you like.
     # 排名越前，优先级越高，The higher the ranking, the higher the priority，ランキングが上位になるほど、優先度が高くなります。
-    Langfilters = ["zh", "en", "ja", "ko"]
+    
+    # 系统默认过滤器。System default filter。（"zh"中文 ,"en"英语 ,"ja"日语 ,"ko"韩语 ,"fr"法语 ,"vi"越南语）
+    # 试验性支持："fr"法语 , "vi"越南语。Experimental: Other language support.
+    DEFAULT_FILTERS = ["zh", "ja", "ko", "en"]
+    # 用户可自定义过滤器。User-defined filters
+    Langfilters = DEFAULT_FILTERS[:] # 创建副本
+    
+    # 试验性支持：您可自定义添加："fr"法语 , "vi"越南语。Experimental: You can customize to add: "fr" French, "vi" Vietnamese.
+    # 请使用API启用：LangSegment.setfilters(["zh", "en", "ja", "ko", "fr", "vi"]) # 您可自定义添加："fr"法语 , "vi"越南语。
+    
+    # 预览版功能，自动启用或禁用，无需设置
+    # Preview feature, automatically enabled or disabled, no settings required
+    EnablePreview = False
+    
     # 除此以外，它支持简写过滤器，只需按不同语种任意组合即可。
     # In addition to that, it supports abbreviation filters, allowing for any combination of different languages.
     # 示例：您可以任意指定多种组合，进行过滤
@@ -166,34 +179,49 @@ class LangSegment():
         return modified_text + " "
     
     @staticmethod
-    def _saveData(words,language:str,text:str,score:float):
-        # Language word statistics
+    def _statistics(language,text):
+        # Language word statistics:
+        # Chinese characters usually occupy double bytes
         lang_count = LangSegment._lang_count
         if lang_count is None:lang_count = defaultdict(int)
-        if not "|" in language:lang_count[language] += int(len(text)//2) if language == "en" else len(text)
+        if not "|" in language:lang_count[language] += int(len(text)*2) if language == "zh" else len(text)
         LangSegment._lang_count = lang_count
-        # Pre-detection
-        clear_pattern = re.compile(r'([^\w\s]+)')
-        clear_text = re.sub(clear_pattern,'',re.sub(r'\n+','',text)).strip()
+        pass
+    
+    @staticmethod
+    def _clear_text_number(text):
+        clear_text = re.sub(r'([^\w\s]+)','',re.sub(r'\n+','',text)).strip()
         is_number = len(re.sub(re.compile(r'(\d+)'),'',clear_text)) == 0
+        return clear_text,is_number
+    
+    @staticmethod
+    def _saveData(words,language:str,text:str,score:float):
+        # Pre-detection
+        clear_text , is_number = LangSegment._clear_text_number(text)
         # Merge the same language and save the results
         preData = words[-1] if len(words) > 0 else None
         if preData is not None:
             if len(clear_text) == 0:language = preData["lang"]
             elif is_number == True:language = preData["lang"]
+            _ , pre_is_number = LangSegment._clear_text_number(preData["text"])
             if (preData["lang"] == language):
+                LangSegment._statistics(preData["lang"],text)
                 text = preData["text"] + text
                 preData["text"] = text
                 return preData
+            elif pre_is_number == True:
+                text = f'{preData["text"]}{text}'
+                words.pop()
         elif is_number == True: 
             priority_language = LangSegment._get_filters_string()[:2]
-            if priority_language in "ja-zh-en-ko":language = priority_language
+            if priority_language in "ja-zh-en-ko-fr-vi":language = priority_language
         data = {"lang":language,"text": text,"score":score}
         filters = LangSegment.Langfilters
         if filters is None or len(filters) == 0 or "?" in language or   \
             language in filters or language in filters[0] or \
             filters[0] == "*" or filters[0] in "alls-mixs-autos":
             words.append(data)
+            LangSegment._statistics(data["lang"],data["text"])
         return data
 
     @staticmethod
@@ -234,8 +262,9 @@ class LangSegment():
     
     @staticmethod
     def _cleans_text(cleans_text):
-        cleans_text = re.sub(r'([^\w]+)', '', cleans_text)
-        return cleans_text
+        # cleans_text = re.sub(r'([^\w]+)', '', cleans_text)
+        cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1 ', cleans_text)
+        return cleans_text.strip()
     
     @staticmethod
     def _lang_classify(cleans_text):
@@ -278,6 +307,7 @@ class LangSegment():
                     if index_ja != -1 and index_ja < index_zh:language = LANG_JA
                     elif index_zh != -1 and index_zh < index_ja:language = LANG_ZH
                 if LangSegment._is_japanese_kana(cleans_text):language = LANG_JA
+                elif score > 0.90:pass
                 elif EOS and LANG_EOS:language = LANG_ZH if len(cleans_text) <= 1 else language
                 else:
                     LANG_UNKNOWN = f'{LANG_ZH}|{LANG_JA}' if language == LANG_ZH else f'{LANG_JA}|{LANG_ZH}'
@@ -326,9 +356,27 @@ class LangSegment():
     def _process_english(words,data):
         tag , match = data
         text = match[0]
-        language = "en"
-        score = 1.0
-        LangSegment._addwords(words,language,text,score)
+        filters = LangSegment._get_filters_string()
+        priority_language = filters[:2]
+        # Preview feature, other language segmentation processing
+        enablePreview = LangSegment.EnablePreview
+        if enablePreview == True:
+            # Experimental: Other language support
+            regex_pattern = re.compile(r'(.*?[。.?？!！]+[\n]{,1})')
+            lines = regex_pattern.split(text)
+            for index , text in enumerate(lines):
+                if len(text.strip()) == 0:continue
+                cleans_text = LangSegment._cleans_text(text)
+                language,score = LangSegment._lang_classify(cleans_text)
+                if language in filters:pass
+                elif score >= 0.95:continue
+                elif score <= 0.15 and filters[:2] == "fr":language = priority_language
+                else:language = "en"
+                LangSegment._addwords(words,language,text,score)
+        else:
+            # Default is English
+            language, score = "en", 1.0
+            LangSegment._addwords(words,language,text,score)
         pass
     
     @staticmethod
@@ -389,19 +437,50 @@ class LangSegment():
     def _parse_symbols(text):
         TAG_NUM = "00" # "00" => default channels , "$0" => testing channel
         TAG_S1,TAG_P1,TAG_P2,TAG_EN,TAG_KO = "$1" ,"$2" ,"$3" ,"$4" ,"$5"
+        # Get custom language filter
+        filters = LangSegment.Langfilters
+        filters = filters if filters is not None else ""
+        # =======================================================================================================
+        # Experimental: Other language support.Thử nghiệm: Hỗ trợ ngôn ngữ khác.Expérimental : prise en charge d’autres langues.
+        # 相关语言字符如有缺失，熟悉相关语言的朋友，可以提交把缺失的发音符号补全。
+        # If relevant language characters are missing, friends who are familiar with the relevant languages can submit a submission to complete the missing pronunciation symbols.
+        # S'il manque des caractères linguistiques pertinents, les amis qui connaissent les langues concernées peuvent soumettre une soumission pour compléter les symboles de prononciation manquants.
+        # Nếu thiếu ký tự ngôn ngữ liên quan, những người bạn quen thuộc với ngôn ngữ liên quan có thể gửi bài để hoàn thành các ký hiệu phát âm còn thiếu.
+        # -------------------------------------------------------------------------------------------------------
+        # Preview feature, other language support
+        enablePreview = LangSegment.EnablePreview
+        if "fr" in filters or \
+           "vi" in filters:enablePreview = True
+        LangSegment.EnablePreview = enablePreview
+        # 实验性：法语字符支持。Prise en charge des caractères français
+        RE_FR = "" if not enablePreview else "àáâãäåæçèéêëìíîïðñòóôõöùúûüýþÿ"
+        # 实验性：越南语字符支持。Hỗ trợ ký tự tiếng Việt
+        RE_VI = "" if not enablePreview else "đơưăáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựôâêơưỷỹ"
+        # -------------------------------------------------------------------------------------------------------
         process_list = [
             (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),      # Symbol Tag
             (  TAG_KO  , re.compile('(([【《（(“‘"\']*(\d+\W*\s*)*[\uac00-\ud7a3]+[\W\s]*)+)')  , LangSegment._process_korean  ),      # Korean words
             (  TAG_NUM , re.compile(r'(\W*\d+\W+\d*\W*\d*)')        , LangSegment._process_number  ),      # Number words, Universal in all languages, Ignore it.
-            (  TAG_EN  , re.compile(r'(([【《（(“‘"\']*[a-zA-Z]+[\W\s]*)+)')    , LangSegment._process_english ),                      # English words
+            (  TAG_EN  , re.compile(fr'(([【《（(“‘"\']*[a-zA-Z{RE_FR}{RE_VI}]+[\W\s]*)+)')    , LangSegment._process_english ),              # English words + Other language support.
             (  TAG_P1  , re.compile(r'(["\'])(.*?)(\1)')         , LangSegment._process_quotes  ),      # Regular quotes
             (  TAG_P2  , re.compile(r'([\n]*[【《（(“‘])([^【《（(“‘’”)）》】]{3,})([’”)）》】][\W\s]*[\n]{,1})')   , LangSegment._process_quotes  ),  # Special quotes, There are left and right.
         ]
-        LangSegment._lang_eos = False
-        text_cache = LangSegment._text_cache = {}
-        for item in process_list:
-            text = LangSegment._pattern_symbols(item , text)
-        words = LangSegment._process_tags([] , text , True)
+        words = []
+        lines = re.findall(r'.*\n*', text)
+        for index , text in enumerate(lines):
+            if len(text.strip()) == 0:continue
+            LangSegment._lang_eos = False
+            LangSegment._text_cache = {}
+            for item in process_list:
+                text = LangSegment._pattern_symbols(item , text)
+            cur_word = LangSegment._process_tags([] , text , True)
+            if len(cur_word) == 0:continue
+            cur_data = cur_word[0] if len(cur_word) > 0 else None
+            pre_data = words[-1] if len(words) > 0 else None
+            if cur_data and pre_data and cur_data["lang"] == pre_data["lang"]:
+                cur_data["text"] = f'{pre_data["text"]}{cur_data["text"]}'
+                words.pop()
+            words += cur_word
         lang_count = LangSegment._lang_count
         if lang_count and len(lang_count) > 0:
             lang_count = dict(sorted(lang_count.items(), key=lambda x: x[1], reverse=True))
@@ -466,6 +545,7 @@ class LangSegment():
     def classify(text:str):
         return LangSegment.getTexts(text)
 
+
 def setfilters(filters):
     """
     功能：语言过滤组功能, 可以指定保留语言。不在过滤组中的语言将被清除。您可随心搭配TTS语音合成所支持的语言。
@@ -504,6 +584,25 @@ def getLangfilters():
     """
     return getfilters()
 
+
+def setEnablePreview(value:bool):
+    """
+    启用预览版功能（默认关闭）
+    Enable preview functionality (off by default)
+    Args:
+        value (bool): True=开启， False=关闭
+    """
+    LangSegment.EnablePreview = (value == True)
+    pass
+
+def getEnablePreview():
+    """
+    启用预览版功能（默认关闭）
+    Enable preview functionality (off by default)
+    Args:
+        value (bool): True=开启， False=关闭
+    """
+    return LangSegment.EnablePreview == True
 
 def setPriorityThreshold(threshold:float):
     """
@@ -600,6 +699,11 @@ if __name__ == "__main__":
     
     # 输入示例4：（包含日文，中文，韩语，英文）Input Example 4: (including Japanese, Chinese, Korean, English)
     text = "你的名字叫<ja>佐々木？<ja>吗？韩语中的안녕 오빠读什么呢？あなたの体育の先生は誰ですか? 此次发布会带来了四款iPhone 15系列机型和三款Apple Watch等一系列新品，这次的iPad Air采用了LCD屏幕" 
+    
+    
+    # 试验性支持："fr"法语 , "vi"越南语。Experimental: Other language support.
+    # LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en"]) # 同时取消注释，请在过滤器中添加"fr", "vi" 
+    # text = "Bonjour, comment ça va aujourd'hui ? J'espère que vous passez une bonne journée. Il fait beau dehors, n'est-ce pas ? Je suis très content de vous voir ici. Get custom language filter.Hỗ trợ ký tự tiếng Việt"
     
     
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)

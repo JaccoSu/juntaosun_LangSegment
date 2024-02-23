@@ -21,11 +21,13 @@ print("LangSegment:", version , LangSegment.__develop__)
 # --------------------------------
 # color label table
 langdic = {
-    "zh":["Chinese"  , "#F1F1F1"   ],
-    "en":["English"  , "green"     ],
-    "ja":["Japanese" , "yellow"    ],
-    "ko":["Korean"   , "blue"      ],
-    "no":["None"     , "red"       ],
+    "zh":["Chinese"  , "#F1F1F1"   ], # zh = 中文：  Chinese
+    "en":["English"  , "green"     ], # en = 英文：  English
+    "ja":["Japanese" , "yellow"    ], # ja = 日文：  Japanese
+    "ko":["Korean"   , "blue"      ], # ko = 韩语：  Korean
+    "fr":["French"   , "#ddc3ff"   ], # fr = 法语：  French
+    "vi":["French"   , "#44c2ec"   ], # vi = 越南语：Vietnamese
+    "no":["None"     , "red"       ], # no = 未定义：None
 }
 
 # --------------------------------
@@ -34,34 +36,51 @@ langdic["zh"][0] = "中文(zh)"
 langdic["en"][0] = "英文(en)"
 langdic["ja"][0] = "日文(ja)"
 langdic["ko"][0] = "韩文(ko)"
+langdic["fr"][0] = "法语(fr)"
+langdic["vi"][0] = "越南语(vi)"
 langdic["no"][0] = "其它"
 
+
 # --------------------------------
-# 设置语言过滤器：默认为/中英日韩
+
+# 设置语言过滤器：默认为/中英日韩，支持“fr=法语”，“vi=越南语”
 # Set language filters
-LangSegment.setfilters(["zh", "en", "ja", "ko"])
+ALL_LANGUAGE = ["fr", "vi", "zh", "ja", "ko", "en"]  # 所有过滤器，添加法语支持=fr
+LangSegment.setfilters(ALL_LANGUAGE[:])
+
+
+# --------------------------------
+
 
 # 自定义过滤器，方便在Dropdown使用中文展示，过滤器自带优先级功能。比如 ja-zh 其中 ja 日文优先。
+# 以下是部份示例，可以随意拱配。
 filter_list = [
-    "全部：中日英韩", # all
+    "全部=中文/日文/英文/韩文/法语/越南语", # ALL_LANGUAGE
+    "中文-日文-英文-韩文",
     "中文",
     "英文",
     "日文",
     "韩文",
+    "法语",
+    "越南语",
     "中文-英文",
+    "中文-法语",
     "中文-日文",
+    "中文-越南语",
     "日文-中文",
-    "日文-英文",
-    "中文-英文-日文",
+    "法语-日文-英文",
+    "越南语-日文-韩文",
 ]
 
-# 中文界面显示翻译映射
+# 中文界面显示翻译映射。filter_list 中的字符，必须和下面的表匹配。
 dict_language={
-    "全部：中日英韩":"all", 
+    "全部=中文/日文/英文/韩文/法语/越南语":"all", # ALL_LANGUAGE
     "中文":"zh",
     "英文":"en",
     "日文":"ja",
     "韩文":"ko",
+    "法语":"fr",
+    "越南语":"vi",
 }
 
 # --------------------------------
@@ -112,8 +131,8 @@ def lang_selected(option:str):
         filterValues = filterValues.replace(key,dict_language[key])
     # 设置过滤器值
     print(f"你选择了语言过滤器： {option} ==> {filterValues} ")
-    # all = 代表保留所有语言，这里限定：中英日韩
-    filterValues = ["zh", "en", "ja", "ko"] if filterValues == "all" else [filterValues]
+    # all = 代表保留所有语言，这里限定：中/英/日/韩/法，定义为：ALL_LANGUAGE
+    filterValues = ALL_LANGUAGE if filterValues == "all" else [filterValues]
     LangSegment.setfilters(filterValues)
     pass
 
@@ -144,22 +163,27 @@ def onPageInit():
 #  Instructions for use: The default is automatic word segmentation. You can also manually add language tags to get more accurate word segmentation results: < br >
 #     (1) Automatic word segmentation: If you encounter Chinese and Japanese, the recognition error is due to the overlap of Chinese characters, you can type a space to assist word segmentation (automatic context word segmentation). < br >
 #     (2) Manual word segmentation: language tags\ < ja\ > Japanese </ja\ >,\ < ko \>언니\</ ko\ >,\ < zh\ > Hello\ </zh\ >,\ < en\ > Hello World\ </en\ > to assist word segmentation. < br >
+#          Other language tags such as：\<fr\>Français\</fr\>、\<vi\>Tiếng Việt\</vi\>、
 #     (3) English capital abbreviations: such as USA, ChatGPT. The result is: U S A, ChatG P T. Text To Speech is often separated by spaces to allow letters to be pronounced alone.
 
 lang_desc = """
     使用说明：默认为自动分词，您也可以手动添加语言标签，来获得更精准的分词结果：<br>
     （1）自动分词：若遇到中文与日语，因汉字重叠相连而识别错误，您可打上空格来辅助分词（自动上下文分词）。<br>
     （2）手动分词：语言标签 \<ja\>日本語\</ja\>、\<ko\>언니\</ko\>、\<zh\>你好\</zh\>、\<en\>Hello World\</en\> 来辅助分词。 <br>
+         其它语言标签例如（法语French/越南语Vietnamese）：\<fr\>Français\</fr\>、\<vi\>Tiếng Việt\</vi\>、同样支持。 <br>
     （3）英文大写缩略词：如USA、ChatGPT。结果为：U S A、ChatG P T。语音合成常用空格分隔，让字母单独发音。
 """
 
-# 默认示例文本：
+# 默认示例文本：中/英/日/韩
 example_text = """
 我喜欢在雨天里听音乐。
 I enjoy listening to music on rainy days.
 雨の日に音楽を聴くのが好きです。
 비 오는 날에 음악을 듣는 것을 즐깁니다。
+J'aime écouter de la musique les jours de pluie.
+Tôi thích nghe nhạc vào những ngày mưa.
 """
+
 
 gr_css = """
 .lang_button {

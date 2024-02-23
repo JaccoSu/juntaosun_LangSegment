@@ -1,7 +1,6 @@
 # LangSegment
 **<font size=3 color='#00FFFF'>简介：它是一个强大的多语言（97种语言）的混合文本自动分词工具。[中日英韩：已测试]</font>**   
 **<font size=3 color='#00FFFF'>主要用途：它非常适合各种 TTS 语音合成项目，多语种混合文本的前端推理，和预处理后端训练。</font>**   
-**<font size=3 color='#00FFFF'>（亮点：就算是最难分词的中日共用汉字：“短词短句”，我们也能很好的精准处理。）</font>**   
 
 ![image](./example.png)   
 
@@ -17,8 +16,9 @@ https://github.com/adbar/py3langid
 本代码专为各种 TTS 项目的前端文本多语种混合标注区分，多语言混合训练和推理而编写。
 
 ## 最近更新：News   
-* 版本：v0.2.1     
-* 新功能：语言优先级，置信度评分和阀值（更新帮助见下文）。
+* 版本：v0.2.2     
+* 新功能体验：添加 "fr"法语 / "vi"越南语。（更新帮助见下文）。
+* 语言优先级，置信度评分和阀值。
 * 优化字符处理。fix: LangSegment.setfilters    
 * 更细致的处理，中日英韩，分词更精准！  
 * 多语言过滤组功能（默认关闭）！帮您自动清理不需要的语言内容。   
@@ -212,6 +212,21 @@ print(LangSegment.getTexts("番号: 123456789"))
 print(LangSegment.getTexts("<ja>番号: 123456789</ja>")) 
 # 添加语言标签，正确输出：日文=ja
 ```   
+
+## 预览新增：法语/越南语
+> 版本支持：>=0.2.2 (实验功能)  
+> 法语和越南语，您只需在语言过滤器中添加，即可使用。
+
+```python
+# 自动分词启用设置：法语="fr" , 越南语="vi"
+LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en"])
+
+# 可以随意搭配，比如您的TTS只需（越南语/中文），则仅需保留两个语言。
+# LangSegment.setfilters(["vi" , "zh"])
+
+# 对应的手动语言标签：
+# <fr>Français</fr>、<vi>Tiếng Việt</vi>
+```  
 
 
 ## 总结说明：  
