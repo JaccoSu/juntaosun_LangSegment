@@ -100,7 +100,7 @@ pip3 install LangSegment -i  https://pypi.org/simple --upgrade
 ## 拼读规则：支持  
 ```python
 TTS语音合成（英文字母）大小写拼读规则：
-（1）需要单个字母发音就大写，比如：USA，USB，ChatGPT。
+（1）需要单个字母发音就大写，比如：USA，USB，ChatGPT，LCD，GPU，CEO。
 （2）其它情况正常拼读，就按正常拼写。比如：Nvidia ， Cuda 或者全小写 （nvidia ， cuda ）
 ```
 
