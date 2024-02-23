@@ -17,7 +17,7 @@ https://github.com/adbar/py3langid
 
 ## 最近更新：News   
 * 版本：v0.2.2     
-* 新功能体验：添加 "fr"法语 / "vi"越南语。（更新帮助见下文）。
+* 新功能体验：添加 "fr"法语French / "vi"越南语Vietnamese。（更新帮助见下文）。
 * 语言优先级，置信度评分和阀值。
 * 优化字符处理。fix: LangSegment.setfilters    
 * 更细致的处理，中日英韩，分词更精准！  
@@ -213,7 +213,7 @@ print(LangSegment.getTexts("<ja>番号: 123456789</ja>"))
 # 添加语言标签，正确输出：日文=ja
 ```   
 
-## 预览新增：法语/越南语
+## 预览新增：法语(French)/越南语(Vietnamese)
 > 版本支持：>=0.2.2 (实验功能)  
 > 法语和越南语，您只需在语言过滤器中添加，即可使用。
 
