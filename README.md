@@ -224,7 +224,7 @@ LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en"])
 # 可以随意搭配，比如您的TTS只需（越南语/中文），则仅需保留两个语言。
 # LangSegment.setfilters(["vi" , "zh"])
 
-# 对应的手动语言标签：
+# 对应的（法语fr和越南语vi）手动分词语言标签：
 # <fr>Français</fr>、<vi>Tiếng Việt</vi>
 ```  
 

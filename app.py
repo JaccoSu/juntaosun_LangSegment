@@ -174,7 +174,7 @@ lang_desc = """
     （3）英文大写缩略词：如USA、ChatGPT。结果为：U S A、ChatG P T。语音合成常用空格分隔，让字母单独发音。
 """
 
-# 默认示例文本：中/英/日/韩
+# 默认示例混合文本：中/英/日/韩/法/越
 example_text = """
 我喜欢在雨天里听音乐。
 I enjoy listening to music on rainy days.
