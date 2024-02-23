@@ -369,7 +369,7 @@ class LangSegment():
                 cleans_text = LangSegment._cleans_text(text)
                 language,score = LangSegment._lang_classify(cleans_text)
                 if language in filters:pass
-                elif score >= 0.95:continue
+                elif score >= 0.95:continue # High score, but not in the filter, excluded.
                 elif score <= 0.15 and filters[:2] == "fr":language = priority_language
                 else:language = "en"
                 LangSegment._addwords(words,language,text,score)
