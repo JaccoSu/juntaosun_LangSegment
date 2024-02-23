@@ -1,5 +1,5 @@
 # LangSegment
-**<font size=3 color='#00FFFF'>简介：它是一个强大的多语言（97种语言）的混合文本自动分词工具。[中日英韩：已测试]</font>**   
+**<font size=3 color='#00FFFF'>简介：它是一个强大的多语言（97种语言）的混合文本自动分词工具。[法语/越南语][中/日/英/韩：已测试]</font>**   
 **<font size=3 color='#00FFFF'>主要用途：它非常适合各种 TTS 语音合成项目，多语种混合文本的前端推理，和预处理后端训练。</font>**   
 
 ![image](./example.png)   
