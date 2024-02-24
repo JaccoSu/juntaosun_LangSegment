@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # <fr> Exemple de saisie de texte : un texte mixte contient du japonais, du chinois, du coréen, de l'anglais, du français, du vietnamien, du russe et du thaï </fr>
     # <ru> Пример ввода текста: (смешанный текст содержит/японский, китайский, корейский, английский, французский, вьетнамский, русский, тайский) </ru>
     
-    # 多语种混合文本，无标签自动分词输入：
+    # 多语种混合文本，无标签自动分词输入：Multilingual mixed text, unlabeled automatic word segmentation input:
     text = """
 我喜欢在雨天里听音乐。
 I enjoy listening to music on rainy days.
