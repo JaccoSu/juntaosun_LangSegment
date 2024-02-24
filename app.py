@@ -27,6 +27,8 @@ langdic = {
     "ko":["Korean"   , "blue"      ], # ko = 韩语：  Korean
     "fr":["French"   , "#ddc3ff"   ], # fr = 法语：  French
     "vi":["French"   , "#44c2ec"   ], # vi = 越南语：Vietnamese
+    "ru":["Russian"  , "#CCCC99"   ], # vi = 俄语：  Russian
+    "th":["Thai"     , "#FFCC00"   ], # th = 泰语：  Thai
     "no":["None"     , "red"       ], # no = 未定义：None
 }
 
@@ -38,14 +40,20 @@ langdic["ja"][0] = "日文(ja)"
 langdic["ko"][0] = "韩文(ko)"
 langdic["fr"][0] = "法语(fr)"
 langdic["vi"][0] = "越南语(vi)"
+langdic["ru"][0] = "俄语(ru)"
+langdic["th"][0] = "泰语(th)"
 langdic["no"][0] = "其它"
 
 
-# --------------------------------
+# 系统默认过滤器。System default filter。(ISO 639-1 codes given)
+# ----------------------------------------------------------------------------------------------------------------------------------
+# "zh"中文=Chinese ,"en"英语=English ,"ja"日语=Japanese ,"ko"韩语=Korean ,"fr"法语=French ,"vi"越南语=Vietnamese , "ru"俄语=Russian
+# "th"泰语=Thai
+# ----------------------------------------------------------------------------------------------------------------------------------
 
-# 设置语言过滤器：默认为/中英日韩，支持“fr=法语”，“vi=越南语”
+# 设置语言过滤器：默认为/中英日韩，(支持"fr"法语=French, "vi"越南语=Vietnamese, "ru"俄语=Russian, "th"泰语=Thai)
 # Set language filters
-ALL_LANGUAGE = ["fr", "vi", "zh", "ja", "ko", "en"]  # 所有过滤器，添加法语支持=fr
+ALL_LANGUAGE = ["fr", "vi" , "ja", "zh", "ko", "en" , "ru" , "th"]
 LangSegment.setfilters(ALL_LANGUAGE[:])
 
 
@@ -55,7 +63,7 @@ LangSegment.setfilters(ALL_LANGUAGE[:])
 # 自定义过滤器，方便在Dropdown使用中文展示，过滤器自带优先级功能。比如 ja-zh 其中 ja 日文优先。
 # 以下是部份示例，可以随意拱配。
 filter_list = [
-    "全部=中文/日文/英文/韩文/法语/越南语", # ALL_LANGUAGE
+    "中文zh/日文ja/英文en/韩文ko/法语fr/越南语vi/俄语ru/泰语th(ALL)", # ALL_LANGUAGE
     "中文-日文-英文-韩文",
     "中文",
     "英文",
@@ -63,24 +71,30 @@ filter_list = [
     "韩文",
     "法语",
     "越南语",
+    "俄语",
+    "泰语",
     "中文-英文",
     "中文-法语",
     "中文-日文",
     "中文-越南语",
-    "日文-中文",
-    "法语-日文-英文",
-    "越南语-日文-韩文",
+    "中文-俄语",
+    "中文-泰语",
+    "日文-中文-泰语",
+    "法语-日文-英文-俄语",
+    "越南语-日文-韩文-泰语",
 ]
 
 # 中文界面显示翻译映射。filter_list 中的字符，必须和下面的表匹配。
 dict_language={
-    "全部=中文/日文/英文/韩文/法语/越南语":"all", # ALL_LANGUAGE
+    "中文zh/日文ja/英文en/韩文ko/法语fr/越南语vi/俄语ru/泰语th(ALL)":"all", # ALL_LANGUAGE
     "中文":"zh",
     "英文":"en",
     "日文":"ja",
     "韩文":"ko",
     "法语":"fr",
     "越南语":"vi",
+    "俄语":"ru",
+    "泰语":"th",
 }
 
 # --------------------------------
@@ -120,7 +134,7 @@ def parse_language(input_text):
     if len(langCounts) > 0:
         lang , count = langCounts[0] 
         filters = LangSegment.getfilters()
-        label_text = f"您输入的主要语言为：【{getLanglabel(lang)}】。参考依据：{str(langCounts)}。\n过滤保留设置：LangSegment.setfilters({filters})"
+        label_text = f"您输入的主要语言为：【{getLanglabel(lang)}】。\n参考依据：{str(langCounts)}。\n过滤设置：LangSegment.setfilters({filters})"
     return output , codes , label_text
 
 # 过滤：
@@ -174,7 +188,7 @@ lang_desc = """
     （3）英文大写缩略词：如USA、ChatGPT。结果为：U S A、ChatG P T。语音合成常用空格分隔，让字母单独发音。
 """
 
-# 默认示例混合文本：中/英/日/韩/法/越
+# 默认示例混合文本：中/英/日/韩/法/越/俄/泰
 example_text = """
 我喜欢在雨天里听音乐。
 I enjoy listening to music on rainy days.
@@ -182,6 +196,8 @@ I enjoy listening to music on rainy days.
 비 오는 날에 음악을 듣는 것을 즐깁니다。
 J'aime écouter de la musique les jours de pluie.
 Tôi thích nghe nhạc vào những ngày mưa.
+Мне нравится слушать музыку в дождливую погоду.
+ฉันชอบฟังเพลงในวันที่ฝนตก
 """
 
 

@@ -100,14 +100,18 @@ class LangSegment():
     # Languages not in the filter group will be cleared. You can match the languages supported by TTS Text To Speech as you like.
     # 排名越前，优先级越高，The higher the ranking, the higher the priority，ランキングが上位になるほど、優先度が高くなります。
     
-    # 系统默认过滤器。System default filter。（"zh"中文 ,"en"英语 ,"ja"日语 ,"ko"韩语 ,"fr"法语 ,"vi"越南语）
-    # 试验性支持："fr"法语 , "vi"越南语。Experimental: Other language support.
+    # 系统默认过滤器。System default filter。(ISO 639-1 codes given)
+    # ----------------------------------------------------------------------------------------------------------------------------------
+    # "zh"中文=Chinese ,"en"英语=English ,"ja"日语=Japanese ,"ko"韩语=Korean ,"fr"法语=French ,"vi"越南语=Vietnamese , "ru"俄语=Russian
+    # "th"泰语=Thai
+    # ----------------------------------------------------------------------------------------------------------------------------------
     DEFAULT_FILTERS = ["zh", "ja", "ko", "en"]
+    
     # 用户可自定义过滤器。User-defined filters
     Langfilters = DEFAULT_FILTERS[:] # 创建副本
     
     # 试验性支持：您可自定义添加："fr"法语 , "vi"越南语。Experimental: You can customize to add: "fr" French, "vi" Vietnamese.
-    # 请使用API启用：LangSegment.setfilters(["zh", "en", "ja", "ko", "fr", "vi"]) # 您可自定义添加："fr"法语 , "vi"越南语。
+    # 请使用API启用：LangSegment.setfilters(["zh", "en", "ja", "ko", "fr", "vi" , "ru" , "th"]) # 您可自定义添加，如："fr"法语 , "vi"越南语。
     
     # 预览版功能，自动启用或禁用，无需设置
     # Preview feature, automatically enabled or disabled, no settings required
@@ -380,6 +384,24 @@ class LangSegment():
         pass
     
     @staticmethod
+    def _process_Russian(words,data):
+        tag , match = data
+        text = match[0]
+        language = "ru"
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
+        pass
+    
+    @staticmethod
+    def _process_Thai(words,data):
+        tag , match = data
+        text = match[0]
+        language = "th"
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
+        pass
+    
+    @staticmethod
     def _process_korean(words,data):
         tag , match = data
         text = match[0]
@@ -436,7 +458,8 @@ class LangSegment():
     @staticmethod
     def _parse_symbols(text):
         TAG_NUM = "00" # "00" => default channels , "$0" => testing channel
-        TAG_S1,TAG_P1,TAG_P2,TAG_EN,TAG_KO = "$1" ,"$2" ,"$3" ,"$4" ,"$5"
+        TAG_S1,TAG_P1,TAG_P2,TAG_EN,TAG_KO,TAG_RU,TAG_TH = "$1" ,"$2" ,"$3" ,"$4" ,"$5" ,"$6" ,"$7"
+        TAG_BASE = re.compile(fr'(([【《（(“‘"\']*[LANGUAGE]+[\W\s]*)+)')
         # Get custom language filter
         filters = LangSegment.Langfilters
         filters = filters if filters is not None else ""
@@ -458,11 +481,13 @@ class LangSegment():
         RE_VI = "" if not enablePreview else "đơưăáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựôâêơưỷỹ"
         # -------------------------------------------------------------------------------------------------------
         process_list = [
-            (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),      # Symbol Tag
-            (  TAG_KO  , re.compile('(([【《（(“‘"\']*(\d+\W*\s*)*[\uac00-\ud7a3]+[\W\s]*)+)')  , LangSegment._process_korean  ),      # Korean words
-            (  TAG_NUM , re.compile(r'(\W*\d+\W+\d*\W*\d*)')        , LangSegment._process_number  ),      # Number words, Universal in all languages, Ignore it.
-            (  TAG_EN  , re.compile(fr'(([【《（(“‘"\']*[a-zA-Z{RE_FR}{RE_VI}]+[\W\s]*)+)')    , LangSegment._process_english ),              # English words + Other language support.
-            (  TAG_P1  , re.compile(r'(["\'])(.*?)(\1)')         , LangSegment._process_quotes  ),      # Regular quotes
+            (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),     # Symbol Tag
+            (  TAG_KO  , re.compile(re.sub(r'LANGUAGE',f'\uac00-\ud7a3',TAG_BASE.pattern))    , LangSegment._process_korean  ),              # Korean words
+            (  TAG_TH  , re.compile(re.sub(r'LANGUAGE',f'\u0E00-\u0E7F',TAG_BASE.pattern))    , LangSegment._process_Thai ),                 # Thai words support.
+            (  TAG_RU  , re.compile(re.sub(r'LANGUAGE',f'А-Яа-яЁё',TAG_BASE.pattern))         , LangSegment._process_Russian ),              # Russian words support.
+            (  TAG_NUM , re.compile(r'(\W*\d+\W+\d*\W*\d*)')        , LangSegment._process_number  ),  # Number words, Universal in all languages, Ignore it.
+            (  TAG_EN  , re.compile(re.sub(r'LANGUAGE',f'a-zA-Z{RE_FR}{RE_VI}',TAG_BASE.pattern))    , LangSegment._process_english ),       # English words + Other language support.
+            (  TAG_P1  , re.compile(r'(["\'])(.*?)(\1)')         , LangSegment._process_quotes  ),     # Regular quotes
             (  TAG_P2  , re.compile(r'([\n]*[【《（(“‘])([^【《（(“‘’”)）》】]{3,})([’”)）》】][\W\s]*[\n]{,1})')   , LangSegment._process_quotes  ),  # Special quotes, There are left and right.
         ]
         words = []
@@ -698,12 +723,22 @@ if __name__ == "__main__":
     
     
     # 输入示例4：（包含日文，中文，韩语，英文）Input Example 4: (including Japanese, Chinese, Korean, English)
-    text = "你的名字叫<ja>佐々木？<ja>吗？韩语中的안녕 오빠读什么呢？あなたの体育の先生は誰ですか? 此次发布会带来了四款iPhone 15系列机型和三款Apple Watch等一系列新品，这次的iPad Air采用了LCD屏幕" 
+    # text = "你的名字叫<ja>佐々木？<ja>吗？韩语中的안녕 오빠读什么呢？あなたの体育の先生は誰ですか? 此次发布会带来了四款iPhone 15系列机型和三款Apple Watch等一系列新品，这次的iPad Air采用了LCD屏幕" 
     
     
-    # 试验性支持："fr"法语 , "vi"越南语。Experimental: Other language support.
-    # LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en"]) # 同时取消注释，请在过滤器中添加"fr", "vi" 
-    # text = "Bonjour, comment ça va aujourd'hui ? J'espère que vous passez une bonne journée. Il fait beau dehors, n'est-ce pas ? Je suis très content de vous voir ici. Get custom language filter.Hỗ trợ ký tự tiếng Việt"
+    # 试验性支持："fr"法语 , "vi"越南语 , "ru"俄语 , "th"泰语。Experimental: Other language support.
+    LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en" , "ru" , "th"])
+    text = """
+我喜欢在雨天里听音乐。
+I enjoy listening to music on rainy days.
+雨の日に音楽を聴くのが好きです。
+비 오는 날에 음악을 듣는 것을 즐깁니다。
+J'aime écouter de la musique les jours de pluie.
+Tôi thích nghe nhạc vào những ngày mưa.
+Мне нравится слушать музыку в дождливую погоду.
+ฉันชอบฟังเพลงในวันที่ฝนตก
+    """
+    
     
     
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)

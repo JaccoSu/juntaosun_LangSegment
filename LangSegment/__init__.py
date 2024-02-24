@@ -1,7 +1,7 @@
 from .LangSegment import LangSegment,getTexts,classify,getCounts,printList,setLangfilters,getLangfilters,setfilters,getfilters,setPriorityThreshold,getPriorityThreshold,setEnablePreview,getEnablePreview
 
 # release
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 
 # develop
