@@ -216,7 +216,8 @@ print(LangSegment.getTexts("<ja>番号: 123456789</ja>"))
 ```   
 
 ## 预览新增：法语(French)/越南语(Vietnamese)/俄语(Russian)/泰语(Thai)
-> 版本支持：>=0.2.2 (实验功能)  
+> 版本支持：>=0.2.2 (法语(French)/越南语(Vietnamese))  
+> 版本支持：>=0.2.3 (俄语(Russian)/泰语(Thai))  
 > 法语和越南语，您只需在语言过滤器中添加，即可配合分词标签使用。
 
 ```python
