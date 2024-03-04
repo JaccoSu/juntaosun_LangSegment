@@ -10,6 +10,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------------------------------------------------------------------
     LangSegment.setfilters(["fr", "vi" , "ja", "zh", "ko", "en" , "ru" , "th"])
     
+    # 版本显示
+    print("LangSegment:" , LangSegment.__version__)
+    
     # 语言标签支持：<zh>内容</zh>
     # <zh> 文本输入示例，混合文本同时包含/日文，中文，韩语，英文，法语，越南语，俄语，泰语 </zh>
     # <en> Text input example，mixed text contains/Japanese, Chinese, Korean, English, French, Vietnamese, Russian, Thai </en>

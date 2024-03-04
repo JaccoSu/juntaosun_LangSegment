@@ -266,8 +266,8 @@ class LangSegment():
     
     @staticmethod
     def _cleans_text(cleans_text):
-        # cleans_text = re.sub(r'([^\w]+)', '', cleans_text)
         cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1 ', cleans_text)
+        cleans_text = re.sub(r'(.)\1+', r'\1', cleans_text)
         return cleans_text.strip()
     
     @staticmethod
@@ -284,6 +284,8 @@ class LangSegment():
     def _parse_language(words , segment):
         LANG_JA = "ja"
         LANG_ZH = "zh"
+        LANG_ZH_JA = f'{LANG_ZH}|{LANG_JA}'
+        LANG_JA_ZH = f'{LANG_JA}|{LANG_ZH}'
         language = LANG_ZH
         regex_pattern = re.compile(r'([^\w\s]+)')
         lines = regex_pattern.split(segment)
@@ -302,8 +304,13 @@ class LangSegment():
             number_tags = re.compile(r'(⑥\d{6,}⑥)')
             cleans_text = re.sub(number_tags, '' ,text)
             cleans_text = LangSegment._cleans_text(cleans_text)
+            # fix:Langid's recognition of short sentences is inaccurate, and it is spliced longer.
+            if not EOS and len(cleans_text) <= 2:
+                lines[nextId] = f'{text}{nextText}'
+                continue
             language,score = LangSegment._lang_classify(cleans_text)
             prev_language , prev_text = LangSegment._get_prev_data(words)
+            if not language in LANG_ZH_JA and all('\u4e00' <= c <= '\u9fff' for c in cleans_text):language,score = LANG_ZH,1
             if len(cleans_text) <= 5 and LangSegment._is_chinese(cleans_text):
                 filters_string = LangSegment._get_filters_string()
                 if score < LangSegment.LangPriorityThreshold and len(filters_string) > 0:
@@ -311,10 +318,10 @@ class LangSegment():
                     if index_ja != -1 and index_ja < index_zh:language = LANG_JA
                     elif index_zh != -1 and index_zh < index_ja:language = LANG_ZH
                 if LangSegment._is_japanese_kana(cleans_text):language = LANG_JA
-                elif score > 0.90:pass
+                elif len(cleans_text) > 2 and score > 0.90:pass
                 elif EOS and LANG_EOS:language = LANG_ZH if len(cleans_text) <= 1 else language
                 else:
-                    LANG_UNKNOWN = f'{LANG_ZH}|{LANG_JA}' if language == LANG_ZH else f'{LANG_JA}|{LANG_ZH}'
+                    LANG_UNKNOWN = LANG_ZH_JA if language == LANG_ZH or (len(cleans_text) <=2 and prev_language == LANG_ZH) else LANG_JA_ZH
                     match_end,match_char = LangSegment._match_ending(text, -1)
                     referen = prev_language in LANG_UNKNOWN or LANG_UNKNOWN in prev_language if prev_language else False
                     if match_char in "。.": language = prev_language if referen and len(words) > 0 else language
@@ -596,18 +603,18 @@ def getfilters():
     """
     return LangSegment.getfilters()
 
-# @Deprecated：Use shorter setfilters
-def setLangfilters(filters):
-    """
-    >0.1.9废除：使用更简短的setfilters
-    """
-    setfilters(filters)
-# @Deprecated：Use shorter getfilters
-def getLangfilters():
-    """
-    >0.1.9废除：使用更简短的getfilters
-    """
-    return getfilters()
+# # @Deprecated：Use shorter setfilters
+# def setLangfilters(filters):
+#     """
+#     >0.1.9废除：使用更简短的setfilters
+#     """
+#     setfilters(filters)
+# # @Deprecated：Use shorter getfilters
+# def getLangfilters():
+#     """
+#     >0.1.9废除：使用更简短的getfilters
+#     """
+#     return getfilters()
 
 
 def setEnablePreview(value:bool):
@@ -727,7 +734,7 @@ if __name__ == "__main__":
     
     
     # 试验性支持："fr"法语 , "vi"越南语 , "ru"俄语 , "th"泰语。Experimental: Other language support.
-    LangSegment.setfilters(["fr", "vi" , "zh", "ja", "ko", "en" , "ru" , "th"])
+    LangSegment.setfilters(["fr", "vi" , "ja", "zh", "ko", "en" , "ru" , "th"])
     text = """
 我喜欢在雨天里听音乐。
 I enjoy listening to music on rainy days.
@@ -737,8 +744,7 @@ J'aime écouter de la musique les jours de pluie.
 Tôi thích nghe nhạc vào những ngày mưa.
 Мне нравится слушать музыку в дождливую погоду.
 ฉันชอบฟังเพลงในวันที่ฝนตก
-    """
-    
+"""
     
     
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)

@@ -17,7 +17,8 @@ https://github.com/adbar/py3langid
 本代码专为各种 TTS 项目的前端文本多语种混合标注区分，多语言混合训练和推理而编写。
 
 ## 最近更新：News   
-* 版本：v0.2.3     
+* 版本：v0.2.4     
+fix: Repeat short sentences   
 * 添加支持： "ru"俄语Russian / "th"泰语Thai。（更新帮助见下文）。
 * 添加支持： "fr"法语French  / "vi"越南语Vietnamese。
 * 语言优先级，置信度评分和阀值。
