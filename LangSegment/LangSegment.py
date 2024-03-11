@@ -183,12 +183,14 @@ class LangSegment():
         return modified_text + " "
     
     @staticmethod
-    def _statistics(language,text):
+    def _statistics(language, text):
         # Language word statistics:
         # Chinese characters usually occupy double bytes
+        if LangSegment._lang_count is None or not isinstance(LangSegment._lang_count, defaultdict):
+            LangSegment._lang_count = defaultdict(int)
         lang_count = LangSegment._lang_count
-        if lang_count is None:lang_count = defaultdict(int)
-        if not "|" in language:lang_count[language] += int(len(text)*2) if language == "zh" else len(text)
+        if not "|" in language:
+            lang_count[language] += int(len(text)*2) if language == "zh" else len(text)
         LangSegment._lang_count = lang_count
         pass
     
