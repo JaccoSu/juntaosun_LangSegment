@@ -33,6 +33,8 @@ J'aime écouter de la musique les jours de pluie.
 Tôi thích nghe nhạc vào những ngày mưa.
 Мне нравится слушать музыку в дождливую погоду.
 ฉันชอบฟังเพลงในวันที่ฝนตก
+《冰雪女王5:融冰之战》
+【冰雪女王5:融冰之战】
     """
     
     # 输入示例：（包含日文，中文，韩语，英文）

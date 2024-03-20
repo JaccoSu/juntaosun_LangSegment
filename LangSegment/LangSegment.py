@@ -147,7 +147,7 @@ class LangSegment():
     
     
     # DEFINITION
-    PARSE_TAG = re.compile(r'(⑥\$\d+[\d]{6,}⑥)')
+    PARSE_TAG = re.compile(r'(⑥\$*\d+[\d]{6,}⑥)')
     
     @staticmethod
     def _clears():
@@ -553,7 +553,7 @@ class LangSegment():
         text_langs = LangSegment._text_langs
         if text_langs is None or len(text_langs) == 0:return [("zh",0)]
         lang_counts = defaultdict(int)
-        for d in text_langs:lang_counts[d['lang']] += int(len(d['text'])//2) if d['lang'] == "en" else len(d['text'])
+        for d in text_langs:lang_counts[d['lang']] += int(len(d['text'])*2) if d['lang'] == "zh" else len(d['text'])
         lang_counts = dict(sorted(lang_counts.items(), key=lambda x: x[1], reverse=True))
         lang_counts = list(lang_counts.items())
         LangSegment._lang_count = lang_counts
