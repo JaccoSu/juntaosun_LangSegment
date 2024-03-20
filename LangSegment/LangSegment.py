@@ -500,7 +500,7 @@ class LangSegment():
             (  TAG_P2  , re.compile(r'([\n]*[【《（(“‘])([^【《（(“‘’”)）》】]{3,})([’”)）》】][\W\s]*[\n]{,1})')   , LangSegment._process_quotes  ),  # Special quotes, There are left and right.
         ]
         words = []
-        lines = re.findall(r'.*\n*', text)
+        lines = re.findall(r'.*\n*', re.sub(LangSegment.PARSE_TAG, '' ,text))
         for index , text in enumerate(lines):
             if len(text.strip()) == 0:continue
             LangSegment._lang_eos = False
