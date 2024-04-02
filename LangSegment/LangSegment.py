@@ -435,6 +435,16 @@ class LangSegment():
                 LangSegment._addwords(words,language,text,score)
         pass
     
+        
+    @staticmethod
+    def _process_pinyin(words,data):
+        tag , match = data
+        text = match
+        language = "zh"
+        score = 1.0
+        LangSegment._addwords(words,language,text,score)
+        pass
+    
     @staticmethod
     def _process_number(words,data): # "$0" process only
         """
@@ -467,7 +477,7 @@ class LangSegment():
     @staticmethod
     def _parse_symbols(text):
         TAG_NUM = "00" # "00" => default channels , "$0" => testing channel
-        TAG_S1,TAG_P1,TAG_P2,TAG_EN,TAG_KO,TAG_RU,TAG_TH = "$1" ,"$2" ,"$3" ,"$4" ,"$5" ,"$6" ,"$7"
+        TAG_S1,TAG_S2,TAG_P1,TAG_P2,TAG_EN,TAG_KO,TAG_RU,TAG_TH = "$1" ,"$2" ,"$3" ,"$4" ,"$5" ,"$6" ,"$7","$8"
         TAG_BASE = re.compile(fr'(([【《（(“‘"\']*[LANGUAGE]+[\W\s]*)+)')
         # Get custom language filter
         filters = LangSegment.Langfilters
@@ -490,7 +500,8 @@ class LangSegment():
         RE_VI = "" if not enablePreview else "đơưăáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựôâêơưỷỹ"
         # -------------------------------------------------------------------------------------------------------
         process_list = [
-            (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),     # Symbol Tag
+            (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),               # Symbol Tag
+            (  TAG_S2  , re.compile(r'([\(（](?:\s*\w*\d\w*\s*)+[）\)])') , LangSegment._process_pinyin  ),      # Pinyin Tag
             (  TAG_KO  , re.compile(re.sub(r'LANGUAGE',f'\uac00-\ud7a3',TAG_BASE.pattern))    , LangSegment._process_korean  ),              # Korean words
             (  TAG_TH  , re.compile(re.sub(r'LANGUAGE',f'\u0E00-\u0E7F',TAG_BASE.pattern))    , LangSegment._process_Thai ),                 # Thai words support.
             (  TAG_RU  , re.compile(re.sub(r'LANGUAGE',f'А-Яа-яЁё',TAG_BASE.pattern))         , LangSegment._process_Russian ),              # Russian words support.
