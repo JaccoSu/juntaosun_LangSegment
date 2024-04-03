@@ -10,6 +10,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------------------------------------------------------------------
     LangSegment.setfilters(["fr", "vi" , "ja", "zh", "ko", "en" , "ru" , "th"])
     
+    # 中文：开启汉语拼音保留支持。默认关闭
+    LangSegment.setKeepPinyin(True)
+    
     # 版本显示
     print("LangSegment:" , LangSegment.__version__)
     

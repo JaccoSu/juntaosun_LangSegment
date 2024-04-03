@@ -145,6 +145,10 @@ class LangSegment():
     # 更多过滤组合，请您随意。。。For more filter combinations, please feel free to......
     # より多くのフィルターの組み合わせ、お気軽に。。。더 많은 필터 조합을 원하시면 자유롭게 해주세요. .....
     
+    # 可选保留：支持中文数字拼音格式，更方便前端实现拼音音素修改和推理，默认关闭 False 。
+    # 开启后 True ，括号内的数字拼音格式均保留，并识别输出为："zh"中文。
+    keepPinyin = False 
+    
     
     # DEFINITION
     PARSE_TAG = re.compile(r'(⑥\$*\d+[\d]{6,}⑥)')
@@ -268,7 +272,7 @@ class LangSegment():
     
     @staticmethod
     def _cleans_text(cleans_text):
-        cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1 ', cleans_text)
+        cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1\2', cleans_text)
         cleans_text = re.sub(r'(.)\1+', r'\1', cleans_text)
         return cleans_text.strip()
     
@@ -499,9 +503,9 @@ class LangSegment():
         # 实验性：越南语字符支持。Hỗ trợ ký tự tiếng Việt
         RE_VI = "" if not enablePreview else "đơưăáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựôâêơưỷỹ"
         # -------------------------------------------------------------------------------------------------------
+        # Basic options:
         process_list = [
             (  TAG_S1  , re.compile(LangSegment.SYMBOLS_PATTERN) , LangSegment._process_symbol  ),               # Symbol Tag
-            (  TAG_S2  , re.compile(r'([\(（](?:\s*\w*\d\w*\s*)+[）\)])') , LangSegment._process_pinyin  ),      # Pinyin Tag
             (  TAG_KO  , re.compile(re.sub(r'LANGUAGE',f'\uac00-\ud7a3',TAG_BASE.pattern))    , LangSegment._process_korean  ),              # Korean words
             (  TAG_TH  , re.compile(re.sub(r'LANGUAGE',f'\u0E00-\u0E7F',TAG_BASE.pattern))    , LangSegment._process_Thai ),                 # Thai words support.
             (  TAG_RU  , re.compile(re.sub(r'LANGUAGE',f'А-Яа-яЁё',TAG_BASE.pattern))         , LangSegment._process_Russian ),              # Russian words support.
@@ -510,6 +514,11 @@ class LangSegment():
             (  TAG_P1  , re.compile(r'(["\'])(.*?)(\1)')         , LangSegment._process_quotes  ),     # Regular quotes
             (  TAG_P2  , re.compile(r'([\n]*[【《（(“‘])([^【《（(“‘’”)）》】]{3,})([’”)）》】][\W\s]*[\n]{,1})')   , LangSegment._process_quotes  ),  # Special quotes, There are left and right.
         ]
+        # Extended options: Default False
+        if LangSegment.keepPinyin == True:process_list.insert(1 , 
+            (  TAG_S2  , re.compile(r'([\(（{](?:\s*\w*\d\w*\s*)+[}）\)])') , LangSegment._process_pinyin  ),     # Chinese Pinyin Tag. 
+        ) 
+        # -------------------------------------------------------------------------------------------------------
         words = []
         lines = re.findall(r'.*\n*', re.sub(LangSegment.PARSE_TAG, '' ,text))
         for index , text in enumerate(lines):
@@ -630,6 +639,21 @@ def getfilters():
 #     return getfilters()
 
 
+def setKeepPinyin(value:bool):
+    """
+    可选保留：支持中文数字拼音格式，更方便前端实现拼音音素修改和推理，默认关闭 False 。\n
+    开启后 True ，括号内的数字拼音格式均保留，并识别输出为："zh"中文。
+    """
+    LangSegment.keepPinyin = value
+    pass
+
+def getKeepPinyin():
+    """
+    可选保留：支持中文数字拼音格式，更方便前端实现拼音音素修改和推理，默认关闭 False 。\n
+    开启后 True ，括号内的数字拼音格式均保留，并识别输出为："zh"中文。
+    """
+    return LangSegment.keepPinyin
+
 def setEnablePreview(value:bool):
     """
     启用预览版功能（默认关闭）
@@ -723,7 +747,7 @@ def printList(langlist):
     
 
 
-if __name__ == "__main__":
+def main():
     
     # -----------------------------------
     # 更新日志：新版本分词更加精准。
@@ -759,7 +783,7 @@ Tôi thích nghe nhạc vào những ngày mưa.
 ฉันชอบฟังเพลงในวันที่ฝนตก
 """
 
-    
+
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)
     langlist = LangSegment.getTexts(text)
     printList(langlist)
@@ -806,5 +830,7 @@ Tôi thích nghe nhạc vào những ngày mưa.
     # The main language of the input content is = zh, word count = 51
     
     
+if __name__ == "__main__":
+    main()
 
     
