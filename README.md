@@ -100,7 +100,7 @@ pip3 install LangSegment -i  https://pypi.org/simple --upgrade
     # 而在语音合成TTS项目中，一般用空格隔开字母来单独发音：“L C D”
 ```
 
-## 拼读规则：支持  
+## 英文拼读：支持  
 ```python
 TTS语音合成（英文字母）大小写拼读规则：
 （1）需要单个字母发音就大写，比如：USA，USB，ChatGPT，LCD，GPU，CEO。
