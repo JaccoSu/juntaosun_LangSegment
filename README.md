@@ -18,7 +18,7 @@ https://github.com/adbar/py3langid
 
 ## 最近更新：News   
 * 版本：v0.3.0   （更新帮助见下文）。
-* 添加支持： "zh"中文（数字拼音pinyin），保留发音指定。 
+* 添加支持： "zh"中文（数字拼音pinyin），保留多音字（音素）指定。 
 * 添加支持： "ru"俄语Russian / "th"泰语Thai。
 * 添加支持： "fr"法语French  / "vi"越南语Vietnamese。
 * 语言优先级，置信度评分和阀值。
