@@ -272,7 +272,7 @@ class LangSegment():
     
     @staticmethod
     def _cleans_text(cleans_text):
-        cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1\2', cleans_text)
+        cleans_text = re.sub(r'(.*?)([^\w]+)', r'\1 ', cleans_text)
         cleans_text = re.sub(r'(.)\1+', r'\1', cleans_text)
         return cleans_text.strip()
     
@@ -309,6 +309,7 @@ class LangSegment():
                 continue
             number_tags = re.compile(r'(⑥\d{6,}⑥)')
             cleans_text = re.sub(number_tags, '' ,text)
+            cleans_text = re.sub(r'\d+', '' ,cleans_text)
             cleans_text = LangSegment._cleans_text(cleans_text)
             # fix:Langid's recognition of short sentences is inaccurate, and it is spliced longer.
             if not EOS and len(cleans_text) <= 2:
@@ -782,7 +783,6 @@ Tôi thích nghe nhạc vào những ngày mưa.
 Мне нравится слушать музыку в дождливую погоду.
 ฉันชอบฟังเพลงในวันที่ฝนตก
 """
-
 
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)
     langlist = LangSegment.getTexts(text)

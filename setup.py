@@ -18,7 +18,7 @@ def get_long_description():
 
 setup(
     name='LangSegment',
-    version='0.3.0',
+    version='0.3.1',
     packages=find_packages(),
     include_package_data=True,
     long_description=get_long_description(),
