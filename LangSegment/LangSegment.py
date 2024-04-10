@@ -317,7 +317,7 @@ class LangSegment():
                 continue
             language,score = LangSegment._lang_classify(cleans_text)
             prev_language , prev_text = LangSegment._get_prev_data(words)
-            if (not language in LANG_ZH_JA or score < 0.95) and all('\u4e00' <= c <= '\u9fff' for c in cleans_text):language,score = LANG_ZH,1
+            if language != LANG_ZH and all('\u4e00' <= c <= '\u9fff' for c in cleans_text):language,score = LANG_ZH,1
             if len(cleans_text) <= 5 and LangSegment._is_chinese(cleans_text):
                 filters_string = LangSegment._get_filters_string()
                 if score < LangSegment.LangPriorityThreshold and len(filters_string) > 0:
@@ -783,6 +783,7 @@ Tôi thích nghe nhạc vào những ngày mưa.
 Мне нравится слушать музыку в дождливую погоду.
 ฉันชอบฟังเพลงในวันที่ฝนตก
 """
+
 
     # 进行分词：（接入TTS项目仅需一行代码调用）Segmentation: (Only one line of code is required to access the TTS project)
     langlist = LangSegment.getTexts(text)
